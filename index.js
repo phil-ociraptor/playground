@@ -2,20 +2,21 @@ const axios = require("axios");
 
 const run = async () => {
   // schedule all tasks
-  const tasks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
-  const cancellableResults = tasks.map((t) => {
-    return getData();
+  const tasks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+  const source = axios.CancelToken.source();
+  const promises = tasks.map((t) => {
+    return getData(source);
   });
   console.log("just scheduled all of the tasks");
 
   // set a timeout
   setTimeout(() => {
     console.log("cancelling all outstanding requests");
-    cancellableResults.forEach((cr) => cr.cancelTokenSource.cancel());
+    source.cancel({ to: "Daniel", from: "Anon" });
   }, 1800);
 
   // wait for responses
-  const results = await Promise.all(cancellableResults.map((cr) => cr.promise));
+  const results = await Promise.all(promises);
   console.log("Finished waiting");
 
   // how many requests succeeded?
@@ -27,8 +28,8 @@ const run = async () => {
   console.log(cancelled.length, " requests cancelled");
 };
 
-const getData = () => {
-  const source = axios.CancelToken.source();
+const getData = (inputSource) => {
+  const source = inputSource || axios.CancelToken.source();
   const start = new Date();
 
   const promise = axios
@@ -41,15 +42,12 @@ const getData = () => {
     })
     .catch((e) => {
       console.log("error occurred when getting data ", e);
+      // Note the return of this is implicity undefined
     })
     .finally(() => {
       console.log("elapsed ", new Date() - start, "ms");
     });
-
-  return {
-    promise,
-    cancelTokenSource: source,
-  };
+  return promise;
 };
 
 run();
